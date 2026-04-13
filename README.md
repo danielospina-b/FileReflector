@@ -12,3 +12,8 @@ A simple web interface to select which files should be synchronized using rsync.
 - The app lists the file on the local and remote paths.
 - The app shows the files that are already on the destination path, and let's you select and deselect the files to sync.
 - The app executes rsync and leaves only the selected files on the local path.
+
+## AI disclosure
+
+- AI was used in this repo to generate some of the methods and documentation.
+- All generated code was reviewed, not vibe-coded.
