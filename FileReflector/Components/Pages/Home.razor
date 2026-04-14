@@ -39,7 +39,7 @@
 
 <div class="flex-container">
     <div class="tree">
-        <Tree @ref="Tree"
+        <Tree @ref="RemoteTreeNodeTree"
             DefaultExpandAll
             Checkable
             Multiple
@@ -88,7 +88,7 @@
 
 @code {
     List<FileTreeNode> RemoteTreeNodeList = new();
-    Tree<FileTreeNode> Tree = new();
+    Tree<FileTreeNode> RemoteTreeNodeTree = new();
     string[] expandedKeys = [];
     string[] checkedKeys = [];
     string[] selectedKeys = [];
@@ -128,7 +128,7 @@
             var existingFilesInLocal = localTreeNode.GetFilesList();
             checkedKeys = existingFilesInLocal.ToArray<string>();
             StateHasChanged();
-            Tree.ExpandAll();
+            RemoteTreeNodeTree.ExpandAll();
         }
         catch (Exception ex)
         {
