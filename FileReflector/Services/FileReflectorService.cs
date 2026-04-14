@@ -30,7 +30,7 @@ public class FileReflectorService : IFileReflectorService
     {
         var remoteHost = _userConfigurationService.CurrentSettings.RemoteHost;
         var remoteFolder = _userConfigurationService.CurrentSettings.SourcePath;
-        var findCommand = $"cd {remoteFolder} && " + @"find . -printf ""%y %P\n""";
+        var findCommand = $"cd {remoteFolder} && " + @"find . -printf ""%P\t%y\n"" | sort | awk -F '\t' '{print $2, $1}'";
         var listOfFilesAndDirectories = new List<string>();
         
         try
@@ -61,7 +61,7 @@ public class FileReflectorService : IFileReflectorService
     public async Task<FileTreeNode> GetFilesFromLocal()
     {
         var localFolder = _userConfigurationService.CurrentSettings.DestinationPath;
-        var findCommand = $"cd {localFolder} && " + @"find . -printf ""%y %P\n""";
+        var findCommand = $"cd {localFolder} && " + @"find . -printf ""%P\t%y\n"" | sort | awk -F '\t' '{print $2, $1}'";
         var listOfFilesAndDirectories = new List<string>();
         
         try

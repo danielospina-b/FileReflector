@@ -27,7 +27,7 @@ public record FileTreeNode
         var indent = new string(' ', indentLevel * 2);
         var result = $"{indent}{(IsFile ? "📄" : "📁")} {Name}\n";
 
-        foreach (var child in Children.OrderBy(c => c.IsFile).ThenBy(c => c.Name))
+        foreach (var child in Children)
         {
             result += child.ToString(indentLevel + 1);
         }
@@ -38,7 +38,7 @@ public record FileTreeNode
     public List<string> GetFilesList()
     {
         List<string> filesList = [];
-        foreach (var child in Children.OrderBy(c => c.IsFile).ThenBy(c => c.Name))
+        foreach (var child in Children)
         {
             if (child.Children.Count > 0)
             {

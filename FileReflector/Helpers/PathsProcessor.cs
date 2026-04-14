@@ -31,8 +31,7 @@ public class PathsProcessor
 
                 if (!currentNode.Children.Any(child => child.Name == part))
                 {
-                    if (!isFile) currentNode.Children.Insert(0, new FileTreeNode(part, fullPath, isFile));
-                    else currentNode.Children.Add(new FileTreeNode(part, fullPath, isFile));
+                    currentNode.Children.Add(new FileTreeNode(part, fullPath, isFile));
                 }
 
                 currentNode = currentNode.Children.FirstOrDefault(child => child.Name == part)!;
