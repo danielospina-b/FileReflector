@@ -31,9 +31,12 @@ public class UserConfigurationService
 
     public void ValidateSettings()
     {
-        if (string.IsNullOrWhiteSpace(_environmentSourcePath)) StopApplication($"{SOURCEPATH_ENV_NAME} environment variable not found.");
-        if (string.IsNullOrWhiteSpace(_environmentDestinationPath)) StopApplication($"{DESTINATIONPATH_ENV_NAME} environment variable not found.");
         if (string.IsNullOrWhiteSpace(_environmentRemoteHost)) StopApplication($"{REMOTEHOST_ENV_NAME} environment variable not found.");
+        _logger.LogInformation("Using Remote Source Host: [{RemoteSourceHost}]", _environmentRemoteHost);
+        if (string.IsNullOrWhiteSpace(_environmentSourcePath)) StopApplication($"{SOURCEPATH_ENV_NAME} environment variable not found.");
+        _logger.LogInformation("Using Remote Source Path: [{RemoteSourcePath}]", _environmentSourcePath);
+        if (string.IsNullOrWhiteSpace(_environmentDestinationPath)) StopApplication($"{DESTINATIONPATH_ENV_NAME} environment variable not found.");
+        _logger.LogInformation("Using Remote Source Path: [{RemoteDestinationHost}]", _environmentDestinationPath);
     }
 
     /// <summary>
