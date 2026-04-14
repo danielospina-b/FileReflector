@@ -1,36 +1,45 @@
+.page-shell {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .flex-container {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    height: 100vh;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .tree {
     padding-left: 2rem;
     padding-top: 2em;
     flex: 1 1 auto;
+    min-height: 0;
     position: relative;
     align-self: stretch;
     overflow-y: auto;
 }
 
 .rsync-log-window {
-    height: 300px; 
+    height: 30vh;
     background-color: #1e1e1e;
     color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .rsync-log-window-body {
     padding: 10px;
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: small;
-    overflow-y: auto;
 }
 
 .general-info {
     padding-top: 1rem;
     padding-left: 2rem;
     padding-right: 2rem;
+    flex-shrink: 0;
 }

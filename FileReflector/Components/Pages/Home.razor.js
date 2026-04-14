@@ -1,8 +1,10 @@
 function scrollToBottom() {
-    console.log("called")
-    var domElement = document.getElementById('rsync-body-div')
-    domElement.scrollTo({
-        top: domElement.scrollHeight,
-        behavior: 'smooth'
-    })
+    setTimeout(() => {
+        var domElement = document.getElementById('rsync-log-window');
+        if (!domElement) return;
+        domElement.scrollTo({
+            top: domElement.scrollHeight,
+            behavior: 'smooth'
+        })
+    }, 200);
 }

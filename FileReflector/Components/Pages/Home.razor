@@ -11,75 +11,76 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="general-info">
-    <button class="btn btn-primary" @onclick="RunCommand">Get Files From Remote</button>
-    <button class="btn btn-primary" @onclick="SyncSelectedFiles">Sync Selected Files</button>
+<div class="page-shell">
+    <div class="general-info">
+        <button class="btn btn-primary" @onclick="RunCommand">Get Files From Remote</button>
+        <button class="btn btn-primary" @onclick="SyncSelectedFiles">Sync Selected Files</button>
 
-    @if (IsGettingFiles)
-    {
-        <div class="alert alert-info" role="alert">
-            Getting files from remote...
-        </div>
-    }
-    else if (GetFilesSuccess)
-    {
-        <div class="alert alert-success" role="alert">
-            Successfully retrieved files!
-        </div>
-    }
-    else if (GetFilesError)
-    {
-        <div class="alert alert-danger" role="alert">
-            Error retrieving files: @GetErrorMessage
-        </div>
-    }
-    <br />
-    <div>Pre-checked files already exist on destination</div>
-</div>
-
-<div class="flex-container">
-    <div class="tree">
-        <Tree @ref="RemoteTreeNodeTree"
-            DefaultExpandAll
-            Checkable
-            Multiple
-            BlockNode
-            CheckOnClickNode="true"
-            @bind-CheckedKeys="checkedKeys"
-            @bind-SelectedKeys="selectedKeys"
-            @bind-ExpandedKeys="expandedKeys"
-            DataSource="RemoteTreeNodeList"
-            TitleExpression="x => x.DataItem.DisplayName"
-            KeyExpression="x => x.DataItem.GetPathIfFile()"
-            ChildrenExpression="x => x.DataItem.Children"
-            IsLeafExpression="x => x.DataItem.Children?.Count == 0"
-            TItem="FileTreeNode">
-        </Tree>
+        @if (IsGettingFiles)
+        {
+            <div class="alert alert-info" role="alert">
+                Getting files from remote...
+            </div>
+        }
+        else if (GetFilesSuccess)
+        {
+            <div class="alert alert-success" role="alert">
+                Successfully retrieved files!
+            </div>
+        }
+        else if (GetFilesError)
+        {
+            <div class="alert alert-danger" role="alert">
+                Error retrieving files: @GetErrorMessage
+            </div>
+        }
+        <br />
+        <div>Pre-checked files already exist on destination</div>
     </div>
 
-
-    <div class="rsync-log-window" id="rsync-log-window">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-lg font-semibold">Rsync Log</h3>
+    <div class="flex-container">
+        <div class="tree">
+            <Tree @ref="RemoteTreeNodeTree"
+                DefaultExpandAll
+                Checkable
+                Multiple
+                BlockNode
+                CheckOnClickNode="true"
+                @bind-CheckedKeys="checkedKeys"
+                @bind-SelectedKeys="selectedKeys"
+                @bind-ExpandedKeys="expandedKeys"
+                DataSource="RemoteTreeNodeList"
+                TitleExpression="x => x.DataItem.DisplayName"
+                KeyExpression="x => x.DataItem.GetPathIfFile()"
+                ChildrenExpression="x => x.DataItem.Children"
+                IsLeafExpression="x => x.DataItem.Children?.Count == 0"
+                TItem="FileTreeNode">
+            </Tree>
         </div>
-        
-        <div class="rsync-log-window-body" id="rsync-body-div">
-            @if (RsyncLogs.Any())
-            {
-                <div class="text-green-400 mb-1">
-                    <strong>Sync started:</strong> @DateTime.Now.ToString("HH:mm:ss")
-                </div>
-                @foreach (var log in RsyncLogs.ToList())
+
+        <div class="rsync-log-window" id="rsync-log-window">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-semibold">Rsync Log</h3>
+            </div>
+
+            <div class="rsync-log-window-body" id="rsync-body-div">
+                @if (RsyncLogs.Any())
                 {
-                    <div class="mb-1">
-                        <span class="text-blue-400">@log</span>
+                    <div class="text-green-400 mb-1">
+                        <strong>Sync started:</strong> @DateTime.Now.ToString("HH:mm:ss")
                     </div>
+                    @foreach (var log in RsyncLogs.ToList())
+                    {
+                        <div class="mb-1">
+                            <span class="text-blue-400">@log</span>
+                        </div>
+                    }
                 }
-            }
-            else
-            {
-                <div class="rsync-log-window-body">No logs available yet</div>
-            }
+                else
+                {
+                    <div class="rsync-log-window-body">No logs available yet</div>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -97,36 +98,42 @@
     [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
 
     private List<string> RsyncLogs = new();
+    private bool _disposed;
 
-    private async Task AddRsyncLog(string logEntry)
+    private async Task AddRsyncLog(List<string> logsList)
     {
-        RsyncLogs.Add(logEntry);
+        RsyncLogs.AddRange(logsList);
         await InvokeAsync(StateHasChanged);
         await JsRuntime.InvokeVoidAsync("scrollToBottom");
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
-        FileReflectorService.OnRsyncLogs += async (sender, logLine) =>
-        {
-            await AddRsyncLog(logLine);
-        };
+        FileReflectorService.OnRsyncLogs += OnRsyncLogReceived;
+        return Task.CompletedTask;
     }
-    
+
+    private async void OnRsyncLogReceived(object? sender, List<string> logsList)
+    {
+        await AddRsyncLog(logsList);
+    }
+
     private async Task RunCommand()
     {
         IsGettingFiles = true;
         GetFilesSuccess = false;
         GetFilesError = false;
         GetErrorMessage = null;
-        
+
         try
         {
             var remoteTreeNode = await FileReflectorService.GetFilesFromRemote();
             RemoteTreeNodeList = new List<FileTreeNode> { remoteTreeNode };
+
             var localTreeNode = await FileReflectorService.GetFilesFromLocal();
             var existingFilesInLocal = localTreeNode.GetFilesList();
-            checkedKeys = existingFilesInLocal.ToArray<string>();
+            checkedKeys = existingFilesInLocal.ToArray();
+
             StateHasChanged();
             RemoteTreeNodeTree.ExpandAll();
         }
@@ -140,14 +147,20 @@
             IsGettingFiles = false;
         }
     }
-    
-    private async void SyncSelectedFiles()
+
+    private async Task SyncSelectedFiles()
     {
         var fileList = checkedKeys.Where(s => !string.IsNullOrEmpty(s)).ToList();
-        Logger.LogDebug($"Syncing the following checked Items:\n{string.Join("\n", fileList)}");
+        Logger.LogDebug("Syncing the following checked Items:\n{Files}", string.Join("\n", fileList));
         await FileReflectorService.SyncFilesToLocal(fileList);
     }
-    
+
+    public void Dispose()
+    {
+        _disposed = true;
+        FileReflectorService.OnRsyncLogs -= OnRsyncLogReceived;
+    }
+
     protected string? GetErrorMessage { get; set; }
     protected bool IsGettingFiles { get; set; } = false;
     protected bool GetFilesSuccess { get; set; } = false;
