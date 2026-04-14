@@ -17,6 +17,7 @@ public class FileReflectorService : IFileReflectorService
     private PeriodicTimer? _rsyncLogTimer;
     private CancellationTokenSource? _rsyncLogCts;
     private Task? _rsyncLogFlushTask;
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     public FileReflectorService(ILogger<FileReflectorService> logger, UserConfigurationService userConfigurationService)
     {
@@ -98,33 +99,43 @@ public class FileReflectorService : IFileReflectorService
 
     public async Task SyncFilesToLocal(List<string> fileList)
     {
-        StartRsyncLogBatching();
-
-        var rsyncFileList = PathsProcessor.GetRsyncEscapedPathsWithParents(fileList);
-        var localFolder = _userConfigurationService.CurrentSettings.DestinationPath;
-        var remoteHost = _userConfigurationService.CurrentSettings.RemoteHost;
-        var remoteFolder = _userConfigurationService.CurrentSettings.SourcePath;
-
-        _logger.LogInformation("rsync summary: remoteHost={RemoteHost}, remoteFolder={RemoteFolder}, localFolder={LocalFolder}, include-from=\n{RsyncFileList}", remoteHost, remoteFolder, localFolder, rsyncFileList);
+        if (!await _syncLock.WaitAsync(0)) return;
 
         try
         {
-            await Cli.Wrap("rsync")
-                .WithArguments(args => args
-                    .Add("-a").Add("-vv")
-                    .Add("--include-from=-")
-                    .Add("--exclude=*").Add("--delete-excluded")
-                    .Add("--info=progress2")
-                    .Add($"{remoteHost}:{remoteFolder}")
-                    .Add($"{localFolder}")
-                )
-                .WithStandardInputPipe(PipeSource.FromString(rsyncFileList))
-                .WithStandardOutputPipe(PipeTarget.ToDelegate(LogDebugRsync))
-                .ExecuteBufferedAsync();
+            StartRsyncLogBatching();
+
+            var rsyncFileList = PathsProcessor.GetRsyncEscapedPathsWithParents(fileList);
+            var localFolder = _userConfigurationService.CurrentSettings.DestinationPath;
+            var remoteHost = _userConfigurationService.CurrentSettings.RemoteHost;
+            var remoteFolder = _userConfigurationService.CurrentSettings.SourcePath;
+
+            _logger.LogInformation("rsync summary: remoteHost={RemoteHost}, remoteFolder={RemoteFolder}, localFolder={LocalFolder}, include-from=\n{RsyncFileList}", remoteHost, remoteFolder, localFolder, rsyncFileList);
+
+            try
+            {
+                await Cli.Wrap("rsync")
+                    .WithArguments(args => args
+                        .Add("-a").Add("-vv")
+                        .Add("--human-readable")
+                        .Add("--include-from=-")
+                        .Add("--exclude=*").Add("--delete-excluded")
+                        .Add("--info=progress2")
+                        .Add($"{remoteHost}:{remoteFolder}")
+                        .Add($"{localFolder}")
+                    )
+                    .WithStandardInputPipe(PipeSource.FromString(rsyncFileList))
+                    .WithStandardOutputPipe(PipeTarget.ToDelegate(LogDebugRsync))
+                    .ExecuteBufferedAsync();
+            }
+            finally
+            {
+                await StopRsyncLogBatchingAsync();
+            }
         }
         finally
         {
-            await StopRsyncLogBatchingAsync();
+            _syncLock.Release();
         }
     }
 

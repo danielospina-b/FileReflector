@@ -14,7 +14,7 @@
 <div class="page-shell">
     <div class="general-info">
         <button class="btn btn-primary" @onclick="RunCommand">Get Files From Remote</button>
-        <button class="btn btn-primary" @onclick="SyncSelectedFiles">Sync Selected Files</button>
+        <button class="btn btn-primary" @onclick="SyncSelectedFiles" disabled="@_isSyncing">Sync Selected Files</button>
 
         @if (IsGettingFiles)
         {
@@ -97,8 +97,13 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
 
+    protected string? GetErrorMessage { get; set; }
+    protected bool IsGettingFiles { get; set; } = false;
+    protected bool GetFilesSuccess { get; set; } = false;
+    protected bool GetFilesError { get; set; } = false;
+
     private List<string> RsyncLogs = new();
-    private bool _disposed;
+    private bool _isSyncing;
 
     private async Task AddRsyncLog(List<string> logsList)
     {
@@ -150,19 +155,22 @@
 
     private async Task SyncSelectedFiles()
     {
-        var fileList = checkedKeys.Where(s => !string.IsNullOrEmpty(s)).ToList();
-        Logger.LogDebug("Syncing the following checked Items:\n{Files}", string.Join("\n", fileList));
-        await FileReflectorService.SyncFilesToLocal(fileList);
-    }
+        if (_isSyncing)
+        return;
 
-    public void Dispose()
-    {
-        _disposed = true;
-        FileReflectorService.OnRsyncLogs -= OnRsyncLogReceived;
-    }
+        _isSyncing = true;
+        StateHasChanged();
 
-    protected string? GetErrorMessage { get; set; }
-    protected bool IsGettingFiles { get; set; } = false;
-    protected bool GetFilesSuccess { get; set; } = false;
-    protected bool GetFilesError { get; set; } = false;
+        try {
+            var fileList = checkedKeys.Where(s => !string.IsNullOrEmpty(s)).ToList();
+            Logger.LogDebug("Syncing the following checked Items:\n{Files}", string.Join("\n", fileList));
+            await FileReflectorService.SyncFilesToLocal(fileList);
+        }
+        finally
+        {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+        
+    }
 }
