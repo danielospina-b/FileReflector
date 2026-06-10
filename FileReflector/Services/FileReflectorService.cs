@@ -117,6 +117,7 @@ public class FileReflectorService : IFileReflectorService
                 await Cli.Wrap("rsync")
                     .WithArguments(args => args
                         .Add("-a").Add("-vv")
+                        .Add("--size-only")
                         .Add("--human-readable")
                         .Add("--include-from=-")
                         .Add("--exclude=*").Add("--delete-excluded")
