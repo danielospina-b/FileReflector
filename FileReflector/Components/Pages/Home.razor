@@ -136,7 +136,7 @@
             RemoteTreeNodeList = new List<FileTreeNode> { remoteTreeNode };
 
             var localTreeNode = await FileReflectorService.GetFilesFromLocal();
-            var existingFilesInLocal = localTreeNode.GetFilesList();
+            var existingFilesInLocal = localTreeNode.GetFilesList().Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
             checkedKeys = existingFilesInLocal.ToArray();
             foreach (var node in existingFilesInLocal)
             {
